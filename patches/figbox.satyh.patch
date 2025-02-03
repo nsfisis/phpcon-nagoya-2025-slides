@@ -1,0 +1,19 @@
+--- figbox.satyh	2025-01-19 23:30:37.843791596 +0900
++++ figbox.satyh	2025-01-19 23:31:17.251295982 +0900
+@@ -144,15 +144,7 @@
+       let (_, ext) = Option.from (0, ` `) (splitlst |> List.nth (List.length splitlst - 1)) in
+       match ext with
+       | `pdf`  -> use-image-by-width (load-pdf-image pth pg) wid
+-      | `jpg`  -> use-image-by-width (load-image pth) wid
+-      | `jpeg` -> use-image-by-width (load-image pth) wid
+-      | `jpe`  -> use-image-by-width (load-image pth) wid
+-      | `jfif` -> use-image-by-width (load-image pth) wid
+-      | `jfi`  -> use-image-by-width (load-image pth) wid
+-      | `jif`  -> use-image-by-width (load-image pth) wid
+-      | _ ->
+-          let () = display-message (`Failed to include image: [` ^ pth ^ `]`) in
+-          inline-nil
++      | _  -> use-image-by-width (load-image pth) wid
+     in
+     Box(embedf)
+ 

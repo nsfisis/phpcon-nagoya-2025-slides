@@ -1,0 +1,789 @@
+@import: ./slydifi/my-theme
+@require: code-printer/code-design
+@require: code-printer/code-printer
+@require: code-printer/code-syntax
+@require: code-printer/code-theme
+@require: figbox/figbox
+
+let ex-big-textbox ?:size-opt it =
+  let size = Option.from 48pt size-opt in
+    FigBox.textbox?:(set-font-size size) it
+
+let big-textbox ?:size-opt it =
+  let size = Option.from 32pt size-opt in
+    FigBox.textbox?:(set-font-size size) it
+
+let mid-textbox ?:size-opt it =
+  let size = Option.from 24pt size-opt in
+    FigBox.textbox?:(set-font-size size) it
+
+let with-frame figbox = figbox
+  |> FigBox.hvmargin 16pt
+  |> FigBox.frame 2pt Color.black
+
+let-block +code-block-php source =
+  '<
+    +code-printer?:(
+      CodePrinter.make-config CodeSyntax.php CodeTheme.iceberg-light
+      |> CodePrinter.set-number-fun CodeDesign.number-fun-null
+      |> CodePrinter.set-basic-font-size 32pt
+    )(source);
+  >
+
+open FigBox
+in
+
+document '<
+  +make-title(|
+    title = {
+      |PHP処理系の
+      |garbage collection を理解する
+      |～メモリはいつ解放されるのか～
+      |};
+    author = {|nsfisis (いまむら)|};
+    date = {|PHPカンファレンス名古屋2025|};
+  |);
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  +frame{自己紹介}<
+    +fig-center(vconcat [
+      gap 30pt;
+      big-textbox{いまむら};
+    ]);
+    +fig-center(vconcat [
+      ex-big-textbox{nsfisis};
+    ]);
+    +fig-center(vconcat [
+      include-image 128pt `assets/me_1200x1200.png`;
+    ]);
+    +fig-center(vconcat [
+      big-textbox{\@ デジタルサーカス株式会社};
+    ]);
+  >
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  +frame{はじめに}<
+    +p{
+      メモリ
+    }
+    +p{
+      コンピュータの一時データ置き場
+    }
+  >
+
+  +frame{はじめに}<
+    +p{
+      メモリの容量は増え続けている
+    }
+  >
+
+  +frame{はじめに}<
+    +p{
+      メモリの容量は増え続けている
+    }
+    +p{}
+    +p{
+      無限ではない
+    }
+  >
+
+  +frame{はじめに}<
+    +p{
+      使い果たすと......
+    }
+  >
+
+  +frame{はじめに}<
+    +p{
+      使い果たすと......
+    }
+    +p{}
+    +listing{
+      * プロセスの強制終了
+      * 極端なパフォーマンスの低下
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリ管理
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリ管理
+    }
+    +p{}
+    +listing{
+      * 必要なメモリを確保する
+      * 不要なメモリを解放する
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリの「確保」(割り当て)
+    }
+    +p{}
+    +p{
+      必要なメモリのサイズを要求する
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリの「解放」
+    }
+    +p{}
+    +p{
+      不要になったメモリを再び利用可能にする
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリ管理は難しい
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      メモリ管理は難しい
+    }
+    +p{}
+    +listing{
+      * Memory leak
+      * Double free
+      * Use-after-free
+      * Buffer overflow
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      PHP でメモリ管理を直接おこなう必要はない
+    }
+  >
+
+  +frame{メモリ管理}<
+    +p{
+      PHP でメモリ管理を直接おこなう必要はない
+    }
+    +p{}
+    +p{
+      Garbage Collection
+    }
+  >
+
+  +frame{Garbage Collection}<
+    +p{
+      Garbage Collection (GC)
+    }
+  >
+
+  +frame{Garbage Collection}<
+    +p{
+      Garbage Collection (GC)
+    }
+    +p{}
+    +p{
+      メモリ管理の自動化
+    }
+    +p{
+      自動でメモリを解放
+    }
+  >
+
+  +frame{PHP の GC 概要}<
+    +p{
+      PHP の GC
+    }
+  >
+
+  +frame{PHP の GC 概要}<
+    +p{
+      PHP の GC
+    }
+    +p{}
+    +p{
+      参照カウント + マークアンドスイープ
+    }
+  >
+
+  +frame{参照カウント}<
+    +p{
+      参照カウント
+    }
+  >
+
+  +frame{参照カウント}<
+    +p{
+      参照カウント
+    }
+    +p{}
+    +p{
+      参照されている数を数える
+    }
+    +p{
+      ゼロになったら解放する
+    }
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_1.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_2.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_3.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_4.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_5.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_6.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_7.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_8.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_9.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_10.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = ["foo"];
+$b = ["bar"];
+$a[] = $b;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/rc_11.png`);
+  >
+
+  +frame{参照カウント}<
+    +p{
+      参照カウントの利点
+    }
+    +p{}
+    +listing{
+      * 未使用オブジェクトが即座に解放される
+      * 解放にかかるコストが全体に分散する
+    }
+  >
+
+  +frame{参照カウント}<
+    +p{
+      参照カウントの欠点
+    }
+    +p{}
+    +listing{
+      * 参照の追加にコストがかかる
+      * マルチスレッド/プロセス環境に向かない
+      * 循環参照を扱えない
+    }
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = new stdClass();
+$b = new stdClass();
+$a->x = $b;
+$b->x = $a;
+
+`#);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = new stdClass();
+$b = new stdClass();
+$a->x = $b;
+$b->x = $a;
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/cycle_1.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = new stdClass();
+$b = new stdClass();
+$a->x = $b;
+$b->x = $a;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/cycle_1.png`);
+  >
+
+  +frame{参照カウント}<
+    +code-block-php(`$a = new stdClass();
+$b = new stdClass();
+$a->x = $b;
+$b->x = $a;
+unset($b);
+unset($a);
+
+`#);
+    +fig-abs-pos((127mm, 40mm))(include-image 127mm `assets/cycle_2.png`);
+  >
+
+  +frame{参照カウント}<
+    +p{
+      参照カウントでは循環参照を解放できない
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープ (mark & sweep)
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープ (mark & sweep)
+    }
+    +p{}
+    +p{
+      PHP では循環参照の解放のみ担う
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープ (mark & sweep)
+    }
+    +p{}
+    +listing{
+      * 基本的なマークアンドスイープ
+      * PHP でのマークアンドスイープ
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープの流れ
+    }
+    +p{}
+    +listing{
+      * マークフェーズ
+      * スイープフェーズ
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +p{}
+    +listing{
+      * 確実に使われているオブジェクト (ルート) に印を付ける
+      * そこから辿れるオブジェクトに印を付ける
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/ms_1.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/ms_2.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/ms_3.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +p{}
+    +listing{
+      * 全オブジェクトを調べて、印が付いていなければ解放する
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/ms_4.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/ms_5.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      PHP でのマークアンドスイープ
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      PHP でのマークアンドスイープ
+    }
+    +p{}
+    +p{
+      ほとんどのオブジェクトは参照カウントで解放される
+    }
+    +p{
+      全オブジェクトを走査しなくていい
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      PHP でのマークアンドスイープ
+    }
+    +p{}
+    +p{
+      循環参照「かもしれない」オブジェクトを登録しておく
+    }
+    +p{
+      そのオブジェクトとそこから辿れるオブジェクトだけ走査する
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      PHP でのマークアンドスイープ
+    }
+    +p{}
+    +p{
+      循環参照「かもしれない」オブジェクト
+    }
+    +p{}
+    +p{
+      refcount を減らしたときに 0 にならなかったもの
+    }
+    +p{
+      循環参照は、間接的に自分で自分を指している
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +p{}
+    +listing{
+      * 循環参照かもしれないオブジェクトをルートバッファへ登録する
+      * ルートバッファから辿れる全オブジェクトの refcount を 1減らす
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/msphp_1.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/msphp_2.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +p{}
+    +listing{
+      * すべてのルートバッファから辿れるオブジェクトについて、
+        ** refcount が 0 でないなら1増やす
+        ** refcount が 0 なら解放する
+      * 処理後はルートバッファから取り除く
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/msphp_3.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/msphp_4.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      スイープフェーズ
+    }
+    +fig-abs-pos((60mm, 20mm))(include-image 80mm `assets/msphp_5.png`);
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープが走るタイミング
+    }
+    +p{}
+    +listing{
+      * \code(`gc_collect_cycles()`); を呼んだとき
+      * ルートバッファが一杯になったとき
+        ** デフォルトは 10,000
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープの利点
+    }
+    +p{}
+    +listing{
+      * 循環参照を解放できる
+      * GC が動いていないときのオーバーヘッドがない
+    }
+  >
+
+  +frame{マークアンドスイープ}<
+    +p{
+      マークアンドスイープの欠点
+    }
+    +p{}
+    +listing{
+      * GC に時間がかかる
+    }
+  >
+
+  +frame{振り返り}<
+    +p{
+      PHP の GC
+    }
+    +p{}
+    +p{
+      参照カウント + マークアンドスイープ
+    }
+  >
+
+  +frame{振り返り}<
+    +p{
+      PHP の GC
+    }
+    +p{}
+    +p{
+      参照カウント + マークアンドスイープ
+    }
+    +p{}
+    +p{
+      循環参照以外は参照カウントで、
+    }
+    +p{
+      循環参照はマークアンドスイープで解放
+    }
+  >
+
+  +frame{振り返り}<
+    +p{
+      PHP の GC
+    }
+    +p{}
+    +p{
+      参照カウント + マークアンドスイープ
+    }
+    +p{}
+    +p{
+      多くの (循環参照でない) オブジェクトは未使用になると即座に解放される
+    }
+    +p{
+      循環参照を形成しているオブジェクトは遅れて解放される
+    }
+  >
+
+  +frame{外部リソースの解放}<
+    +p{
+      \code(`fclose()`); は明示的に呼ぶべきか？
+    }
+  >
+
+  +frame{外部リソースの解放}<
+    +p{
+      \code(`fclose()`); は明示的に呼ぶべきか？
+    }
+    +p{}
+    +p{
+      明示的に呼ばなくても、GC で解放されたタイミングでクローズされる
+    }
+  >
+
+  +frame{外部リソースの解放}<
+    +p{
+      \code(`fclose()`); は明示的に呼ぶべきか？
+    }
+    +p{}
+    +p{
+      常に呼ぶべき
+    }
+  >
+
+  +frame{外部リソースの解放}<
+    +p{
+      \code(`fclose()`); は明示的に呼ぶべきか？
+    }
+    +p{}
+    +p{
+      常に呼ぶべき
+    }
+    +listing{
+      * 呼ばなくても問題ないかを判定するのが困難
+      * 呼ばなくても問題ない状態を維持できるとは限らない
+    }
+  >
+
+  +frame{外部リソースの解放}<
+    +p{
+      \code(`fclose()`); は明示的に呼ぶべきか？
+    }
+    +p{}
+    +p{
+      常に呼ぶべき
+    }
+    +listing{
+      * 呼ばなくても問題ないかを判定するのが困難
+      * 呼ばなくても問題ない状態を維持できるとは限らない
+    }
+    +p{}
+    +p{
+      循環参照になっていないか、解放が遅れても問題ないなら呼ばなくてよい
+    }
+  >
+
+  +frame{最後に}<
+    +p{
+      話せなかったこと
+    }
+    +p{}
+    +listing{
+      * 複数スレッド/プロセス間での共有
+      * リクエスト毎に確保・解放されるメモリとグローバルなメモリ
+      * Copy on Write
+      * 弱参照
+      * \code(`memory_limit`);
+    }
+  >
+
+>
